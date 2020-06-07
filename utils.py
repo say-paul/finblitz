@@ -1,4 +1,5 @@
 import json
+import os
 def autoSave():
 	global lsave
 	curr_time = time.time()
@@ -15,16 +16,17 @@ def autoSave():
 def combiner(filepath,file_names):
     
 	for ticker in file_names:
-		final = {}
-		with open(filepath+"/"+ticker, 'r') as f:
-			data = f.read()
-		data = data.replace("}{","}split{")
-		splittedData = data.split('split')
+		if os.path.exists(filepath+"/"+ticker):
+			final = {}
+			with open(filepath+"/"+ticker, 'r') as f:
+				data = f.read()
+			data = data.replace("}{","}split{")
+			splittedData = data.split('split')
+			
+			for dictionary in splittedData:
+				tmp = json.loads(dictionary.replace("'",'"'))
+				for key in tmp.keys():
+					final[key] = tmp[key]
 		
-		for dictionary in splittedData:
-			tmp = json.loads(dictionary.replace("'",'"'))
-			for key in tmp.keys():
-				final[key] = tmp[key]
-	
-		with open(filepath+"/"+ticker, 'w') as fw:
-			fw.write(str(final))
+			with open(filepath+"/"+ticker, 'w') as fw:
+				fw.write(str(final))

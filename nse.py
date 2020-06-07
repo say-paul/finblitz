@@ -2,6 +2,8 @@ import urllib.request
 import json
 import time
 import os
+from queue import Queue
+from threading import Thread
 from utils import combiner
 
 def import_web(ticker):
@@ -25,12 +27,14 @@ def get_quote(ticker):
     """
     ticker = ticker.upper()
     try:
-        """fetches a UTF-8-encoded web page, and  extract some text from the HTML"""
+        print("fetching data for {}".format(ticker))
         string_html = filter_data(import_web(ticker))
         # exit()
         # get_data(string_html,ticker)
     except Exception as e:
-        print(e)
+        print("{} for {}".format(e,ticker))
+        retry_list.append(ticker)
+
     return string_html
 
           
@@ -76,28 +80,64 @@ def buyer_seller(stripped):
     
     return {js['lastUpdateTime'] : subdictionary}
 
+def runner(ticker):
+    try:
+        print("Starting get_quote for ", ticker)
+        filtered_data = get_quote(ticker)
+        volume_data = buyer_seller(filtered_data)
+        with open(volume_path+"/"+ticker, 'a+') as f:
+            f.write(str(volume_data))
+        price_intraday = intraday_price_data(filtered_data)
+        with open(intraday_path+"/"+ticker, 'a+') as f:
+            f.write(str(price_intraday))
+
+    except Exception as e:
+        print(e)
+
+def do_stuff(q):
+    while True:
+        ticker =  q.get()
+        print("Ticker {}".format(ticker))
+        runner(ticker)
+        q.task_done()
+
 def main():
     if not os.path.exists('historical_data'):
         os.makedirs('historical_data')
         os.makedirs('historical_data/buyer_seller_volume')
         os.makedirs('historical_data/intraday')
-    t_list = ['ACC','INFY','TCS']
-    volume_path = "historical_data/buyer_seller_volume"
-    intraday_path = "historical_data/intraday"
-    try:
-        for ticker in t_list:
-            print("Starting get_quote for ",ticker)
-            filtered_data = get_quote(ticker)
-            volume_data = buyer_seller(filtered_data)
-            with open(volume_path+"/"+ticker, 'a+') as f:
-                f.write(str(volume_data))
-            price_intraday = intraday_price_data(filtered_data)
-            with open(intraday_path+"/"+ticker, 'a+') as f:
-                f.write(str(price_intraday))
-            
-    except Exception as e:
-        print(e)
-    finally:
-        combiner(volume_path, t_list)
-        combiner(intraday_path, t_list)
+    with open(script_names,"r") as f:
+        data = f.read()
+    t_list = data.split("\n")
+    for i in range(workers):
+        worker = Thread(target=do_stuff, args=(q,))
+        worker.setDaemon(True)
+        worker.start()
+    for ticker in t_list:
+        q.put(ticker)
+    q.join()
+    
+    for x in range(1):
+        if (0 < len(retry_list)):
+            print("error found {}....".format(str(len(retry_list))))
+            print("retrying {} times....".format(x))
+            for i in range(workers):
+                worker = Thread(target=do_stuff, args=(q,))
+                worker.setDaemon(True)
+                worker.start()
+            for ticker in retry_list:
+                q.put(ticker)
+            q.join()
+    combiner(volume_path, t_list)
+    combiner(intraday_path, t_list)
+
+
+q = Queue(maxsize=0)
+workers = 100
+script_names = "data/test"
+volume_path = "historical_data/buyer_seller_volume"
+intraday_path = "historical_data/intraday"
+retry_list = []
+current = time.time()
 main()
+print("Time taken: {} sec".format(str(time.time()-current)))
