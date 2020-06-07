@@ -1,0 +1,5 @@
+historical_data/
+.vscode/
+__pycache__/
+!historical_data/.keep
+!historical_data/**/.keep
