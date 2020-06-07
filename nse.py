@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import time
+import os
 from utils import combiner
 
 def import_web(ticker):
@@ -76,6 +77,10 @@ def buyer_seller(stripped):
     return {js['lastUpdateTime'] : subdictionary}
 
 def main():
+    if not os.path.exists('historical_data'):
+        os.makedirs('historical_data')
+        os.makedirs('historical_data/buyer_seller_volume')
+        os.makedirs('historical_data/intraday')
     t_list = ['ACC','INFY','TCS']
     volume_path = "historical_data/buyer_seller_volume"
     intraday_path = "historical_data/intraday"

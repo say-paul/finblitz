@@ -1,5 +1,4 @@
 .vscode/
 __pycache__/
-buyer_seller_volume/
-intraday/
+historical_data/
 
