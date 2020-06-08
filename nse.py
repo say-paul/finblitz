@@ -11,8 +11,6 @@ def import_web(ticker):
     :param ticker: Takes the company ticker
     :return: Returns the HTML of the page
     """
-
-
     url = 'https://www.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol='+ticker
     req = urllib.request.Request(url, headers={'User-Agent': "PostmanRuntime/7.25.0"})
     fp = urllib.request.urlopen(req, timeout=4)
