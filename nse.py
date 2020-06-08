@@ -151,6 +151,7 @@ while(True):
         f.write("Time taken: {} sec \n".format((datetime.datetime.now()-current).seconds))
         f.write("Could not fetch {} scripts \n\n".format(str(len(retry_list))))
     f.close()
+    print("Sleeping for 30 sec")
     time.sleep(30)
-    print ("Sleeping fro 30 sec")
+
 
