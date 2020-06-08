@@ -5,18 +5,21 @@ import os
 from queue import Queue
 from threading import Thread
 from utils import combiner
-
+import datetime
 def import_web(ticker):
     """
     :param ticker: Takes the company ticker
     :return: Returns the HTML of the page
     """
-    url = 'https://www.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol='+ticker+'&illiquid=0&smeFlag=0&itpFlag=0'
-    req = urllib.request.Request(url, headers={'User-Agent' : "PostmanRuntime/7.25.0"}) 
-    fp = urllib.request.urlopen(req, timeout=10)
+
+
+    url = 'https://www.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol='+ticker
+    req = urllib.request.Request(url, headers={'User-Agent': "PostmanRuntime/7.25.0"})
+    fp = urllib.request.urlopen(req, timeout=4)
     mybytes = fp.read()
     mystr = mybytes.decode("utf8")
     fp.close()
+
     return mystr
 
 
@@ -32,9 +35,8 @@ def get_quote(ticker):
         # exit()
         # get_data(string_html,ticker)
     except Exception as e:
-        print("{} for {}".format(e,ticker))
+        print("{} error for {}".format(e,ticker))
         retry_list.append(ticker)
-
     return string_html
 
           
@@ -90,11 +92,10 @@ def runner(ticker):
         price_intraday = intraday_price_data(filtered_data)
         with open(intraday_path+"/"+ticker, 'a+') as f:
             f.write(str(price_intraday))
-
     except Exception as e:
         print(e)
 
-def do_stuff(q):
+def threader(q):
     while True:
         ticker =  q.get()
         print("Ticker {}".format(ticker))
@@ -102,6 +103,8 @@ def do_stuff(q):
         q.task_done()
 
 def main():
+    global retry_list
+    retry_list = []
     if not os.path.exists('historical_data'):
         os.makedirs('historical_data')
         os.makedirs('historical_data/buyer_seller_volume')
@@ -109,35 +112,47 @@ def main():
     with open(script_names,"r") as f:
         data = f.read()
     t_list = data.split("\n")
+    
     for i in range(workers):
-        worker = Thread(target=do_stuff, args=(q,))
+        worker = Thread(target=threader, args=(q,))
         worker.setDaemon(True)
         worker.start()
     for ticker in t_list:
-        q.put(ticker)
+       q.put(ticker)
     q.join()
     
-    for x in range(1):
-        if (0 < len(retry_list)):
-            print("error found {}....".format(str(len(retry_list))))
-            print("retrying {} times....".format(x))
-            for i in range(workers):
-                worker = Thread(target=do_stuff, args=(q,))
-                worker.setDaemon(True)
-                worker.start()
-            for ticker in retry_list:
-                q.put(ticker)
-            q.join()
+    # for x in range(1):
+    #     if (0 < len(retry_list)):
+    #         print("error found {}....".format(str(len(retry_list))))
+    #         print("retrying {} times....".format(x))
+    #         for i in range(workers):
+    #             worker = Thread(target=threader, args=(q,))
+    #             worker.setDaemon(True)
+    #             worker.start()
+    #         for ticker in retry_list:
+    #             q.put(ticker)
+    #         q.join()
     combiner(volume_path, t_list)
     combiner(intraday_path, t_list)
-
-
+    print("Total scripts: {}".format(str(len(t_list))))
+    print("Count of scripts failed: {}".format(str(len(retry_list))))
+    return retry_list
 q = Queue(maxsize=0)
-workers = 100
-script_names = "data/test"
+workers = 10
+script_names = "data/stock"
 volume_path = "historical_data/buyer_seller_volume"
 intraday_path = "historical_data/intraday"
 retry_list = []
-current = time.time()
-main()
-print("Time taken: {} sec".format(str(time.time()-current)))
+while(True):
+    current = datetime.datetime.now()
+    with open('report', 'a+') as f:
+        f.write("Run at {} \n".format(current))
+    f.close()
+    retry_list = main()
+    with open('report', 'a+') as f:
+        f.write("Time taken: {} sec \n".format((datetime.datetime.now()-current).seconds))
+        f.write("Could not fetch {} scripts \n\n".format(str(len(retry_list))))
+    f.close()
+    time.sleep(30)
+    print ("Sleeping fro 30 sec")
+
