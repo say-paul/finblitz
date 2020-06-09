@@ -77,7 +77,7 @@ def buyer_seller(stripped):
         if (keys.__contains__("buyPrice") or keys.__contains__("sellPrice") or
          keys.__contains__("buyQuantity") or keys.__contains__("sellQuantity")):
             subdictionary[keys] = datajs[keys]
-    
+    subdictionary['deliveryToTradedQuantity'] = datajs['deliveryToTradedQuantity']
     return {js['lastUpdateTime'] : subdictionary}
 
 def runner(ticker):
