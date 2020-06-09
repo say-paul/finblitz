@@ -95,9 +95,11 @@ def runner(ticker):
 
 def threader(q):
     while True:
-        ticker =  q.get()
+        ticker = q.get(timeout=12)
         print("Ticker {}".format(ticker))
         runner(ticker)
+        combiner(volume_path, [ticker])
+        combiner(intraday_path, [ticker])
         q.task_done()
 
 def main():
@@ -130,13 +132,13 @@ def main():
     #         for ticker in retry_list:
     #             q.put(ticker)
     #         q.join()
-    combiner(volume_path, t_list)
-    combiner(intraday_path, t_list)
+    # combiner(volume_path, t_list)
+    # combiner(intraday_path, t_list)
     print("Total scripts: {}".format(str(len(t_list))))
     print("Count of scripts failed: {}".format(str(len(retry_list))))
     return retry_list
 q = Queue(maxsize=0)
-workers = 10
+workers = 13
 script_names = "data/stock"
 volume_path = "historical_data/buyer_seller_volume"
 intraday_path = "historical_data/intraday"
@@ -146,10 +148,10 @@ while(True):
     with open('report', 'a+') as f:
         f.write("Run at {} \n".format(current))
     f.close()
-    retry_list = main()
+    failed_list = main()
     with open('report', 'a+') as f:
         f.write("Time taken: {} sec \n".format((datetime.datetime.now()-current).seconds))
-        f.write("Could not fetch {} scripts \n\n".format(str(len(retry_list))))
+        f.write("Could not fetch {} scripts \n\n".format(str(len(failed_list))))
     f.close()
     print("Sleeping for 30 sec")
     time.sleep(30)
