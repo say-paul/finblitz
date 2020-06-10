@@ -66,6 +66,7 @@ def intraday_price_data(stripped):
     subdictionary['low'] = datajs['dayLow']
     subdictionary['close'] = datajs['lastPrice']
     subdictionary['volume'] = datajs['totalTradedVolume']
+    subdictionary['pChange'] = datajs['pChange']
     return {js['lastUpdateTime']: subdictionary}
 
          
