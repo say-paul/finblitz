@@ -95,7 +95,7 @@ def runner(ticker):
 
 def threader(q):
     while True:
-        ticker =  q.get()
+        ticker =  q.get(timeout= 12)
         print("Ticker {}".format(ticker))
         runner(ticker)
         q.task_done()
