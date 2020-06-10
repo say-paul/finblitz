@@ -30,3 +30,15 @@ def combiner(filepath,file_names):
 		
 			with open(filepath+"/"+ticker, 'w') as fw:
 				fw.write(str(final))
+
+def cleanse(ticker_data):
+	try:
+		for keys in ticker_data:
+			for attr in ticker_data[keys]:
+				if ticker_data[keys][attr] == "-":
+					ticker_data[keys][attr] = "0"
+				ticker_data[keys][attr] = ticker_data[keys][attr].replace(',', '')
+	except Exception as e:
+            print("{} : {}".format(attr, e))
+	finally:
+		return ticker_data
