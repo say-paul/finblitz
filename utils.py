@@ -30,3 +30,4 @@ def combiner(filepath,file_names):
 		
 			with open(filepath+"/"+ticker, 'w') as fw:
 				fw.write(str(final))
+
